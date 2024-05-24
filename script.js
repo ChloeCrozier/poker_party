@@ -168,3 +168,13 @@ const player1 = new Player('Alice', 100);
 const player2 = new Player('Bob', 100);
 game.addPlayer(player1);
 game.addPlayer(player2);
+
+
+// to do
+// make logic by turn (eg have player and if player is not foelred, take action to set if the amount to call has changed and see what to change for the pot)
+// make logic for blinds
+// make logic for when a win happens
+// make logic for ties
+// make logic for when everyone folds and the last person wins
+// make logic for when a player goes all in
+// make logic for a game vs a round vs a turn
