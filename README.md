@@ -1,2 +1,2 @@
-# poker_party
+# Poker Party
 Multi-player poker game
