@@ -7,20 +7,20 @@ class Card {
 
 class Deck {
   constructor() {
-    this.cards = this.createDeck();
+    this.suits = ['Hearts', 'Diamonds', 'Clubs', 'Spades'];
+    this.values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 'Queen', 'King', 'Ace'];
+    this.cards = [];
+    this.initializeDeck();
     this.shuffle();
   }
 
-  createDeck() {
-    const suits = ['Hearts', 'Diamonds', 'Clubs', 'Spades'];
-    const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 'Queen', 'King', 'Ace'];
-    let deck = [];
-    for (let suit of suits) {
-      for (let value of values) {
-        deck.push(new Card(suit, value));
+  initializeDeck() {
+    this.cards = [];
+    for (let suit of this.suits) {
+      for (let value of this.values) {
+        this.cards.push(new Card(suit, value));
       }
     }
-    return deck;
   }
 
   shuffle() {
@@ -30,11 +30,10 @@ class Deck {
     }
   }
 
-  drawCard() {
-    return this.cards.pop();
+  deal(num) {
+    return this.cards.splice(0, num);
   }
 }
-
 
 class Player {
   constructor(name, chips) {
@@ -42,132 +41,150 @@ class Player {
     this.chips = chips;
     this.hand = [];
     this.currentBet = 0;
-    this.actions = ['fold', 'check', 'call', 'raise'];
-    this.action = 'check';
   }
 
-  receiveCard(card) {
-    this.hand.push(card);
+  receiveCards(cards) {
+    this.hand = cards;
+  }
+
+  bet(amount) {
+    this.chips -= amount;
+    this.currentBet += amount;
+  }
+
+  resetBet() {
+    this.currentBet = 0;
   }
 }
 
-
-class Game {
-  constructor() {
-    this.deck = new Deck();
-    this.players = [];
+class PokerGame {
+  constructor(players, smallBlind, bigBlind) {
+    this.players = players;
+    this.smallBlind = smallBlind;
+    this.bigBlind = bigBlind;
     this.pot = 0;
-    this.dealerCards = [];
-    this.currentPlayerIndex = 0;
-    this.dealerChipIndex = 0;
-    this.littleBlind = 1;
-    this.bigBlind = 3;
-    this.currentBet = this.bigBlind;
-    this.currentRound = 0;
+    this.communityCards = [];
+    this.deck = new Deck();
+    this.dealerIndex = 0;
   }
 
-  addPlayer(player) {
-    this.players.push(player);
+  nextPlayer(index) {
+    return (index + 1) % this.players.length;
   }
 
-  dealFlop() {
-    this.dealerCards.push(this.deck.drawCard());
-    this.dealerCards.push(this.deck.drawCard());
-    this.dealerCards.push(this.deck.drawCard());
+  collectBlinds() {
+    let smallBlindPlayer = this.nextPlayer(this.dealerIndex);
+    let bigBlindPlayer = this.nextPlayer(smallBlindPlayer);
+
+    this.players[smallBlindPlayer].bet(this.smallBlind);
+    this.players[bigBlindPlayer].bet(this.bigBlind);
+
+    this.pot += this.smallBlind + this.bigBlind;
+    console.log(`${this.players[smallBlindPlayer].name} posts small blind of ${this.smallBlind} chips.`);
+    console.log(`${this.players[bigBlindPlayer].name} posts big blind of ${this.bigBlind} chips.`);
   }
 
-  dealTurn() {
-    this.dealerCards.push(this.deck.drawCard());
-  }
-
-  dealRiver() {
-    this.dealerCards.push(this.deck.drawCard());
-  }
-
-  playerBet(player, amount) {
-    player.chips -= amount;
-    this.pot += amount;
-    this.currentBet = amount;
-  }
-
-  playerFold(player) {
-
-  }
-
-  playerCheck(player) {
-    // ...
-  }
-
-  playerCall(player) {
-    const amountToCall = this.currentBet - player.currentBet;
-    this.playerBet(player, amountToCall);
-  }
-
-  playerRaise(player, amount) {
-    const totalBet = amount + this.currentBet;
-    this.playerBet(player, totalBet);
-  }
-
-  nextTurn() {
-    if (this.currentRound === 0) {
-      if (this.currentPlayerIndex === this.roundStartPlayerIndex) {
-        this.currentRound++;
-        this.currentPlayerIndex = (this.roundStartPlayerIndex + 1) % this.players.length;
-        this.amountToCallFlop = this.bigBlind;
-      }
-    }
-    this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
-    if (this.players[this.currentPlayerIndex].status === 'folded') {
-      // ...
-    } else if (this.players[this.currentPlayerIndex].status === 'check') {
-      // ...
-    } else if (this.players[this.currentPlayerIndex].status === 'call') {
-      // ...
-    } else if (this.players[this.currentPlayerIndex].status === 'raise') {
-      // ...
-    } else {
-      // invalid
-    }
-    this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
-    currentRound++;
-    this.nextTurn();
-  }
-
-  startGame() {
+  startNewRound() {
+    this.communityCards = [];
+    this.deck = new Deck();
     this.deck.shuffle();
-    this.dealerCards = [];
-    this.currentPlayerIndex = 0;
-    this.currentBet = this.amountToCallFlop;
 
     this.players.forEach(player => {
-      player.hand = [this.deck.drawCard(), this.deck.drawCard()];
-      player.status = 'active';
-      player.currentBet = 0;
+      player.receiveCards(this.deck.deal(2));
+      player.resetBet();
     });
 
-    this.dealerChipIndex = (this.dealerChipIndex + 1) % this.players.length;
-    let smallBlindIndex = (this.dealerChipIndex + 1) % this.players.length;
-    let bigBlindIndex = (this.dealerChipIndex + 2) % this.players.length;
+    console.log(`Starting new round...`);
+    this.players.forEach(player => {
+      console.log(`${player.name} is dealt:`, player.hand);
+    });
 
-    this.playerBet(this.players[smallBlindIndex], this.littleBlind);
-    this.playerBet(this.players[bigBlindIndex], this.bigBlind);
+    this.collectBlinds();
+  }
 
-    this.roundStartPlayerIndex = (bigBlindIndex + 1) % this.players.length;
+  bettingRound(startingPlayerIndex) {
+    let currentIndex = startingPlayerIndex;
+    let lastRaise = 0;
+    let playersInRound = this.players.length;
+
+    while (true) {
+      let player = this.players[currentIndex];
+      console.log(`${player.name}'s turn. Current bet to call: ${lastRaise} chips.`);
+
+      if (player.currentBet < lastRaise) {
+        if (Math.random() < 0.5) { // Randomly decide to fold or call
+          console.log(`${player.name} folds.`);
+          playersInRound--;
+          if (playersInRound === 1) return false; // Round ends if only one player remains
+        } else {
+          let callAmount = lastRaise - player.currentBet;
+          player.bet(callAmount);
+          this.pot += callAmount;
+          console.log(`${player.name} calls with ${callAmount} chips.`);
+        }
+      } else {
+        let raiseAmount = Math.floor(Math.random() * 10); // Random raise amount
+        player.bet(raiseAmount);
+        this.pot += raiseAmount;
+        lastRaise += raiseAmount;
+        console.log(`${player.name} raises by ${raiseAmount} chips.`);
+      }
+
+      currentIndex = this.nextPlayer(currentIndex);
+      if (currentIndex === startingPlayerIndex) break; // End round after going full circle
+    }
+    return true; // Betting round completed with more than one player
+  }
+
+  showCommunityCards(round) {
+    const cardsToDeal = round === 'flop' ? 3 : 1;
+    const newCards = this.deck.deal(cardsToDeal);
+    this.communityCards.push(...newCards);
+    console.log(`${round.charAt(0).toUpperCase() + round.slice(1)} dealt:`, this.communityCards);
+  }
+
+  determineWinner() {
+    // Simplified winner determination
+    let remainingPlayers = this.players.filter(player => player.currentBet > 0);
+    if (remainingPlayers.length === 1) {
+      console.log(`${remainingPlayers[0].name} wins the pot of ${this.pot} chips since the rest folded!`);
+    } else {
+      // For simplicity, we'll randomly choose a winner among the remaining players
+      let winner = remainingPlayers[Math.floor(Math.random() * remainingPlayers.length)];
+      console.log(`${winner.name} wins the pot of ${this.pot} chips!`);
+    }
+    this.pot = 0; // Reset pot for the next round
+  }
+
+  play() {
+    this.startNewRound();
+    let smallBlindPlayer = this.nextPlayer(this.dealerIndex);
+    let bigBlindPlayer = this.nextPlayer(smallBlindPlayer);
+
+    if (!this.bettingRound(this.nextPlayer(bigBlindPlayer))) {
+      this.determineWinner();
+      return;
+    }
+
+    this.showCommunityCards('flop');
+    if (!this.bettingRound(this.nextPlayer(this.dealerIndex))) {
+      this.determineWinner();
+      return;
+    }
+
+    this.showCommunityCards('turn');
+    if (!this.bettingRound(this.nextPlayer(this.dealerIndex))) {
+      this.determineWinner();
+      return;
+    }
+
+    this.showCommunityCards('river');
+    this.bettingRound(this.nextPlayer(this.dealerIndex));
+    this.determineWinner();
   }
 }
 
-const game = new Game();
-const player1 = new Player('Alice', 100);
-const player2 = new Player('Bob', 100);
-game.addPlayer(player1);
-game.addPlayer(player2);
+const players = [new Player('Alice', 100), new Player('Bob', 100)];
+const game = new PokerGame(players, 1, 2);
 
-
-// to do
-// make logic by turn (eg have player and if player is not foelred, take action to set if the amount to call has changed and see what to change for the pot)
-// make logic for blinds
-// make logic for when a win happens
-// make logic for ties
-// make logic for when everyone folds and the last person wins
-// make logic for when a player goes all in
-// make logic for a game vs a round vs a turn
+game.play();
