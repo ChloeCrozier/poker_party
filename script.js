@@ -94,9 +94,11 @@ class PokerGame {
       player.resetBet();
     });
 
-    console.log(`Starting new round...`);
+    console.log(`\nStarting new round...`);
+    console.log(`\nPot: ${this.pot} chips\n`);
+
     this.players.forEach(player => {
-      console.log(`${player.name} is dealt:`, player.hand);
+      console.log(`${player.name}'s cards:`, player.hand);
     });
 
     this.collectBlinds();
@@ -104,7 +106,7 @@ class PokerGame {
 
   bettingRound(startingPlayerIndex) {
     let currentIndex = startingPlayerIndex;
-    let lastRaise = 0;
+    let lastRaise = this.bigBlind - this.smallBlind; // Initialize last raise to the difference between big blind and small blind
     let playersInRound = this.players.length;
 
     while (true) {
@@ -124,8 +126,8 @@ class PokerGame {
         }
       } else {
         let raiseAmount = Math.floor(Math.random() * 10); // Random raise amount
-        player.bet(raiseAmount);
-        this.pot += raiseAmount;
+        player.bet(raiseAmount + lastRaise); // Raise by the total of the last raise plus the new raise
+        this.pot += raiseAmount + lastRaise;
         lastRaise += raiseAmount;
         console.log(`${player.name} raises by ${raiseAmount} chips.`);
       }
@@ -143,15 +145,63 @@ class PokerGame {
     console.log(`${round.charAt(0).toUpperCase() + round.slice(1)} dealt:`, this.communityCards);
   }
 
+  checkForWin() {
+    const activePlayers = this.players.filter(player => !player.folded);
+    if (activePlayers.length === 1) {
+      const winner = activePlayers[0];
+      winner.chips += this.pot;
+      console.log(`${winner.name} wins the pot of ${this.pot} chips since the rest folded!`);
+      this.pot = 0;
+      return true; // Game ends
+    }
+    return false; // Game continues
+  }
+
+  evaluateHand(cards) {
+    const values = cards.map(card => card.value);
+    const suits = cards.map(card => card.suit);
+    const valueCount = values.reduce((acc, value) => {
+      acc[value] = (acc[value] || 0) + 1;
+      return acc;
+    }, {});
+
+    const sortedValues = values.slice().sort((a, b) => parseInt(a) - parseInt(b));
+    const isStraight = sortedValues.every((value, index, arr) => {
+      if (index === 0) return true;
+      return parseInt(arr[index - 1]) + 1 === parseInt(value);
+    });
+
+    if (Object.values(valueCount).includes(4)) {
+      return { rank: 8, name: 'Four of a Kind', highCard: parseInt(values.find(value => valueCount[value] === 4)), cards };
+    } else if (Object.values(valueCount).includes(3) && Object.values(valueCount).includes(2)) {
+      return { rank: 7, name: 'Full House', highCard: parseInt(values.find(value => valueCount[value] === 3)), cards };
+    } else if (isStraight) {
+      return { rank: 5, name: 'Straight', highCard: parseInt(sortedValues[4]), cards };
+    } else if (Object.values(valueCount).includes(3)) {
+      return { rank: 4, name: 'Three of a Kind', highCard: parseInt(values.find(value => valueCount[value] === 3)), cards };
+    } else if (Object.values(valueCount).filter(count => count === 2).length === 2) {
+      return { rank: 3, name: 'Two Pair', highCard: Math.max(...values.map(value => parseInt(value))), cards };
+    } else if (Object.values(valueCount).includes(2)) {
+      return { rank: 2, name: 'One Pair', highCard: parseInt(values.find(value => valueCount[value] === 2)), cards };
+    } else if (suits.every(suit => suit === suits[0])) {
+      return { rank: 6, name: 'Flush', highCard: Math.max(...values.map(value => parseInt(value))), cards };
+    } else {
+      return { rank: 1, name: 'High Card', highCard: Math.max(...values.map(value => parseInt(value))), cards };
+    }
+  }
+
   determineWinner() {
     // Simplified winner determination
     let remainingPlayers = this.players.filter(player => player.currentBet > 0);
     if (remainingPlayers.length === 1) {
-      console.log(`${remainingPlayers[0].name} wins the pot of ${this.pot} chips since the rest folded!`);
+      const winner = remainingPlayers[0];
+      winner.chips += this.pot;
+      console.log(`${winner.name} wins the pot of ${this.pot} chips with ${this.evaluateHand(winner.hand).name}!`);
     } else {
       // For simplicity, we'll randomly choose a winner among the remaining players
       let winner = remainingPlayers[Math.floor(Math.random() * remainingPlayers.length)];
-      console.log(`${winner.name} wins the pot of ${this.pot} chips!`);
+      winner.chips += this.pot;
+      console.log(`${winner.name} wins the pot of ${this.pot} chips with ${this.evaluateHand(winner.hand).name}!`);
     }
     this.pot = 0; // Reset pot for the next round
   }
@@ -161,23 +211,28 @@ class PokerGame {
     let smallBlindPlayer = this.nextPlayer(this.dealerIndex);
     let bigBlindPlayer = this.nextPlayer(smallBlindPlayer);
 
+    console.log('\nPot:', this.pot, 'chips\n');
+
     if (!this.bettingRound(this.nextPlayer(bigBlindPlayer))) {
       this.determineWinner();
       return;
     }
 
+    console.log('\n--- Round: Flop ---\n');
     this.showCommunityCards('flop');
     if (!this.bettingRound(this.nextPlayer(this.dealerIndex))) {
       this.determineWinner();
       return;
     }
 
+    console.log('\n--- Round: Turn ---\n');
     this.showCommunityCards('turn');
     if (!this.bettingRound(this.nextPlayer(this.dealerIndex))) {
       this.determineWinner();
       return;
     }
 
+    console.log('\n--- Round: River ---\n');
     this.showCommunityCards('river');
     this.bettingRound(this.nextPlayer(this.dealerIndex));
     this.determineWinner();
