@@ -23,13 +23,12 @@ class Deck {
     return deck;
   }
 
-    shuffle() {
-        // Fisher-Yates shuffle algorithm
-        for (let i = this.cards.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [this.cards[i], this.cards[j]] = [this.cards[j], this.cards[i]];
-        }
+  shuffle() {
+    for (let i = this.cards.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [this.cards[i], this.cards[j]] = [this.cards[j], this.cards[i]];
     }
+  }
 
   drawCard() {
     return this.cards.pop();
@@ -42,9 +41,9 @@ class Player {
     this.name = name;
     this.chips = chips;
     this.hand = [];
-    this.status = 'check';
     this.currentBet = 0;
-    this.actions = ['check', 'call', 'raise', 'fold'];
+    this.actions = ['fold', 'check', 'call', 'raise'];
+    this.action = 'check';
   }
 
   receiveCard(card) {
@@ -60,11 +59,11 @@ class Game {
     this.pot = 0;
     this.dealerCards = [];
     this.currentPlayerIndex = 0;
-    this.currentBet = 0;
     this.dealerChipIndex = 0;
     this.littleBlind = 1;
     this.bigBlind = 3;
-    this.amountToCallFlop = bigBlind;
+    this.currentBet = this.bigBlind;
+    this.currentRound = 0;
   }
 
   addPlayer(player) {
@@ -92,7 +91,7 @@ class Game {
   }
 
   playerFold(player) {
-    player.status = 'folded';
+
   }
 
   playerCheck(player) {
@@ -111,33 +110,27 @@ class Game {
 
   nextTurn() {
     if (this.currentRound === 0) {
-        if (this.currentPlayerIndex === this.roundStartPlayerIndex) {
-          this.currentRound++;
-          this.currentPlayerIndex = (this.roundStartPlayerIndex + 1) % this.players.length;
-          this.amountToCallFlop = this.bigBlind;
-        }
+      if (this.currentPlayerIndex === this.roundStartPlayerIndex) {
+        this.currentRound++;
+        this.currentPlayerIndex = (this.roundStartPlayerIndex + 1) % this.players.length;
+        this.amountToCallFlop = this.bigBlind;
+      }
     }
     this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
-    if(this.players[this.currentPlayerIndex].status === 'folded') {
-        // ...
-    } else if(this.players[this.currentPlayerIndex].status === 'check'){ 
-        // ...
-    } else if(this.players[this.currentPlayerIndex].status === 'call'){
-        // ...
-    } else if(this.players[this.currentPlayerIndex].status === 'raise'){
-        // ...
-    } else {    
-        // invalid
+    if (this.players[this.currentPlayerIndex].status === 'folded') {
+      // ...
+    } else if (this.players[this.currentPlayerIndex].status === 'check') {
+      // ...
+    } else if (this.players[this.currentPlayerIndex].status === 'call') {
+      // ...
+    } else if (this.players[this.currentPlayerIndex].status === 'raise') {
+      // ...
+    } else {
+      // invalid
     }
     this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
     currentRound++;
     this.nextTurn();
-    // Implement logic for player actions here
-    // For example:
-    // - Check if player has folded
-    // - Ask player for action (check, call, raise, fold)
-    // - Update pot and current bet accordingly
-    // - Check if round is over
   }
 
   startGame() {
