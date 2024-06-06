@@ -125,17 +125,17 @@ class PokerGame {
           console.log(`${player.name} calls with ${callAmount} chips.`);
         }
       } else {
-        let raiseAmount = Math.floor(Math.random() * 10); // Random raise amount
-        player.bet(raiseAmount + lastRaise); // Raise by the total of the last raise plus the new raise
+        let raiseAmount = Math.floor(Math.random() * 10); 
+        player.bet(raiseAmount + lastRaise); 
         this.pot += raiseAmount + lastRaise;
         lastRaise += raiseAmount;
         console.log(`${player.name} raises by ${raiseAmount} chips.`);
       }
 
       currentIndex = this.nextPlayer(currentIndex);
-      if (currentIndex === startingPlayerIndex) break; // End round after going full circle
+      if (currentIndex === startingPlayerIndex) break;
     }
-    return true; // Betting round completed with more than one player
+    return true; 
   }
 
   showCommunityCards(round) {
@@ -198,12 +198,11 @@ class PokerGame {
       winner.chips += this.pot;
       console.log(`${winner.name} wins the pot of ${this.pot} chips with ${this.evaluateHand(winner.hand).name}!`);
     } else {
-      // For simplicity, we'll randomly choose a winner among the remaining players
       let winner = remainingPlayers[Math.floor(Math.random() * remainingPlayers.length)];
       winner.chips += this.pot;
       console.log(`${winner.name} wins the pot of ${this.pot} chips with ${this.evaluateHand(winner.hand).name}!`);
     }
-    this.pot = 0; // Reset pot for the next round
+    this.pot = 0; 
   }
 
   play() {
