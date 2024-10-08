@@ -15,5 +15,11 @@
   "bugs": {
     "url": "https://github.com/ChloeCrozier/poker_party/issues"
   },
-  "homepage": "https://github.com/ChloeCrozier/poker_party#readme"
+  "homepage": "https://github.com/ChloeCrozier/poker_party#readme",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "mongodb": "^6.9.0",
+    "mongoose": "^8.7.0"
+  }
 }
