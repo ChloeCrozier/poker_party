@@ -14,6 +14,7 @@ mongoose
   .then(() => console.log("Connected to MongoDB Atlas"))
   .catch((err) => console.error("Error connecting to MongoDB Atlas", err));
 
+app.use(express.json());
 app.use("/", gameplayRoutes);
 app.use("/", multiplayerRoutes);
 
