@@ -22,6 +22,7 @@ const GameRoom = mongoose.model("GameRoom", gameRoomSchema);
 
 module.exports = GameRoom;
 
+// Example
 // {
 //     "roomCode": "000001",
 //     "players": [
