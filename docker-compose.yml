@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: poker_mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=poker_party
+    networks:
+      - poker_network
+
+  data-service:
+    build:
+      context: ./services/data-service
+      dockerfile: Dockerfile
+    container_name: poker_data_service
+    ports:
+      - "3001:3001"
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/poker_party
+      - DATA_SERVICE_PORT=3001
+    depends_on:
+      - mongodb
+    networks:
+      - poker_network
+    restart: unless-stopped
+
+  game-service:
+    build:
+      context: ./services/game-service
+      dockerfile: Dockerfile
+    container_name: poker_game_service
+    ports:
+      - "3002:3002"
+    environment:
+      - DATA_SERVICE_URL=http://data-service:3001
+      - GAME_SERVICE_PORT=3002
+    depends_on:
+      - data-service
+    networks:
+      - poker_network
+    restart: unless-stopped
+
+  gateway:
+    build:
+      context: ./services/gateway
+      dockerfile: Dockerfile
+    container_name: poker_gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - DATA_SERVICE_URL=http://data-service:3001
+      - GAME_SERVICE_URL=http://game-service:3002
+      - GATEWAY_PORT=3000
+    depends_on:
+      - data-service
+      - game-service
+    networks:
+      - poker_network
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: poker_nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./client:/usr/share/nginx/html
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - gateway
+    networks:
+      - poker_network
+    restart: unless-stopped
+
+volumes:
+  mongodb_data:
+
+networks:
+  poker_network:
+    driver: bridge 

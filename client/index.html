@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poker Party</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 20px;
+            height: calc(100vh - 150px);
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input,
+        select,
+        button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            font-size: 14px;
+        }
+
+        button {
+            background: #4CAF50;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #45a049;
+        }
+
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+
+        .room-code {
+            background: #4CAF50;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            margin: 15px 0;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .game-table {
+            background: linear-gradient(45deg, #0d5c0d, #1a7a1a);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+            min-height: 400px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .pot {
+            font-size: 28px;
+            font-weight: bold;
+            margin: 20px 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .community-cards {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 30px 0;
+        }
+
+        .card {
+            width: 70px;
+            height: 100px;
+            background: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: black;
+            font-weight: bold;
+            font-size: 18px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            border: 2px solid #ddd;
+        }
+
+        .player-list {
+            margin-top: 20px;
+        }
+
+        .player-item {
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            margin-bottom: 8px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .action-buttons button {
+            padding: 15px;
+            font-size: 16px;
+        }
+
+        .log {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 14px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .status {
+            text-align: center;
+            font-size: 18px;
+            margin: 20px 0;
+        }
+
+        .current-turn {
+            background: #4CAF50;
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎰 Poker Party</h1>
+            <p>Multiplayer Texas Hold'em</p>
+        </div>
+
+        <div class="main-content">
+            <!-- Left Panel - Room Management -->
+            <div class="panel">
+                <h2>Room Management</h2>
+
+                <!-- Create Room -->
+                <div id="createRoomForm">
+                    <h3>Create Room</h3>
+                    <div class="form-group">
+                        <label>Room Name:</label>
+                        <input type="text" id="roomName" placeholder="Enter room name">
+                    </div>
+                    <div class="form-group">
+                        <label>Buy-in ($):</label>
+                        <input type="number" id="buyIn" value="5" step="0.01" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Small Blind ($):</label>
+                        <input type="number" id="smallBlind" value="0.10" step="0.01" min="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Big Blind ($):</label>
+                        <input type="number" id="bigBlind" value="0.20" step="0.01" min="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Max Players:</label>
+                        <select id="maxPlayers">
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8" selected>8</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Your Name:</label>
+                        <input type="text" id="creatorName" placeholder="Enter your name">
+                    </div>
+                    <button onclick="createRoom()">Create Room</button>
+                </div>
+
+                <!-- Join Room -->
+                <div id="joinRoomForm" class="hidden">
+                    <h3>Join Room</h3>
+                    <div class="form-group">
+                        <label>Room Code:</label>
+                        <input type="text" id="joinRoomCode" placeholder="Enter 6-digit code">
+                    </div>
+                    <div class="form-group">
+                        <label>Your Name:</label>
+                        <input type="text" id="joinPlayerName" placeholder="Enter your name">
+                    </div>
+                    <div class="form-group">
+                        <label>Buy-in ($):</label>
+                        <input type="number" id="joinBuyIn" value="5" step="0.01" min="1">
+                    </div>
+                    <button onclick="joinRoom()">Join Room</button>
+                </div>
+
+                <!-- Room Info -->
+                <div id="roomInfo" class="hidden">
+                    <h3>Room Info</h3>
+                    <div class="room-code" id="roomCodeDisplay"></div>
+                    <p><strong>Buy-in:</strong> $<span id="roomBuyIn"></span></p>
+                    <p><strong>Blinds:</strong> $<span id="roomSmallBlind"></span> / $<span id="roomBigBlind"></span>
+                    </p>
+                    <p><strong>Players:</strong> <span id="playerCount"></span>/<span id="maxPlayerCount"></span></p>
+
+                    <div class="player-list" id="playerList"></div>
+
+                    <button id="startGameBtn" onclick="startGame()" class="hidden">Start Game</button>
+                    <button onclick="leaveRoom()">Leave Room</button>
+                </div>
+            </div>
+
+            <!-- Center Panel - Game Table -->
+            <div class="panel">
+                <h2>Poker Table</h2>
+
+                <div id="waitingMessage">
+                    <div class="status">
+                        <h3>Waiting for players...</h3>
+                        <p>Share the room code with others to start playing!</p>
+                    </div>
+                </div>
+
+                <div id="gameTable" class="hidden">
+                    <div class="pot">
+                        Pot: $<span id="potAmount">0</span>
+                    </div>
+
+                    <div class="community-cards" id="communityCards"></div>
+
+                    <div id="playerPositions"></div>
+
+                    <div class="action-buttons" id="actionButtons">
+                        <button onclick="playerAction('fold')" id="foldBtn">Fold</button>
+                        <button onclick="playerAction('check')" id="checkBtn">Check</button>
+                        <button onclick="playerAction('call')" id="callBtn">Call</button>
+                        <button onclick="showRaiseDialog()" id="raiseBtn">Raise</button>
+                    </div>
+
+                    <!-- Raise Dialog -->
+                    <div id="raiseDialog" class="hidden">
+                        <div class="form-group">
+                            <label>Raise Amount ($):</label>
+                            <input type="number" id="raiseAmount" step="0.01" min="0.01">
+                        </div>
+                        <div class="action-buttons">
+                            <button onclick="playerAction('raise')">Confirm</button>
+                            <button onclick="hideRaiseDialog()">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel - Game Log -->
+            <div class="panel">
+                <h2>Game Log</h2>
+                <div class="log" id="gameLog"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+    <script>
+        const API_BASE = 'http://localhost:3000/api';
+        let socket = null;
+        let currentRoom = null;
+        let currentPlayerId = null;
+        let isCreator = false;
+
+        // Initialize socket connection
+        function initSocket() {
+            socket = io('http://localhost:3000');
+
+            socket.on('connect', () => {
+                addLog('Connected to server');
+            });
+
+            socket.on('gameState', (gameState) => {
+                updateGameState(gameState);
+            });
+
+            socket.on('playerJoined', (data) => {
+                addLog(`${data.playerName} joined the room`);
+                updatePlayerList();
+            });
+
+            socket.on('playerLeft', (data) => {
+                addLog('A player left the room');
+                updatePlayerList();
+            });
+
+            socket.on('gameStarted', (data) => {
+                addLog('Game started!');
+                showGameTable();
+            });
+
+            socket.on('error', (data) => {
+                addLog(`Error: ${data.message}`);
+            });
+        }
+
+        // Create room
+        async function createRoom() {
+            const roomData = {
+                name: document.getElementById('roomName').value,
+                buyIn: parseFloat(document.getElementById('buyIn').value),
+                smallBlind: parseFloat(document.getElementById('smallBlind').value),
+                bigBlind: parseFloat(document.getElementById('bigBlind').value),
+                maxPlayers: parseInt(document.getElementById('maxPlayers').value),
+                creatorName: document.getElementById('creatorName').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/rooms`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(roomData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    currentRoom = result.roomCode;
+                    currentPlayerId = result.creatorId;
+                    isCreator = true;
+
+                    showRoomInfo(result.gameState);
+                    socket.emit('joinRoom', { roomCode: currentRoom, playerId: currentPlayerId });
+
+                    addLog(`Room created: ${currentRoom}`);
+                } else {
+                    addLog(`Error: ${result.error}`);
+                }
+            } catch (error) {
+                addLog(`Error: ${error.message}`);
+            }
+        }
+
+        // Join room
+        async function joinRoom() {
+            const roomCode = document.getElementById('joinRoomCode').value;
+            const playerName = document.getElementById('joinPlayerName').value;
+            const buyIn = parseFloat(document.getElementById('joinBuyIn').value);
+
+            try {
+                const response = await fetch(`${API_BASE}/rooms/${roomCode}/join`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ playerName, buyIn })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    currentRoom = roomCode;
+                    currentPlayerId = result.playerId;
+                    isCreator = false;
+
+                    showRoomInfo(result.gameState);
+                    socket.emit('joinRoom', { roomCode: currentRoom, playerId: currentPlayerId });
+
+                    addLog(`Joined room: ${roomCode}`);
+                } else {
+                    addLog(`Error: ${result.error}`);
+                }
+            } catch (error) {
+                addLog(`Error: ${error.message}`);
+            }
+        }
+
+        // Start game
+        async function startGame() {
+            if (!isCreator) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/rooms/${currentRoom}/start`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ creatorId: currentPlayerId })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    addLog('Game started!');
+                } else {
+                    addLog(`Error: ${result.error}`);
+                }
+            } catch (error) {
+                addLog(`Error: ${error.message}`);
+            }
+        }
+
+        // Leave room
+        function leaveRoom() {
+            if (socket && currentRoom && currentPlayerId) {
+                socket.emit('leaveRoom', { roomCode: currentRoom, playerId: currentPlayerId });
+            }
+            resetUI();
+        }
+
+        // Player actions
+        function playerAction(action) {
+            if (!socket || !currentRoom || !currentPlayerId) return;
+
+            let data = { roomCode: currentRoom, playerId: currentPlayerId, action };
+
+            if (action === 'raise') {
+                const amount = parseFloat(document.getElementById('raiseAmount').value);
+                if (isNaN(amount) || amount <= 0) {
+                    addLog('Please enter a valid raise amount');
+                    return;
+                }
+                data.amount = amount;
+                hideRaiseDialog();
+            }
+
+            socket.emit('playerAction', data);
+        }
+
+        // Show/hide raise dialog
+        function showRaiseDialog() {
+            document.getElementById('raiseDialog').classList.remove('hidden');
+        }
+
+        function hideRaiseDialog() {
+            document.getElementById('raiseDialog').classList.add('hidden');
+            document.getElementById('raiseAmount').value = '';
+        }
+
+        // Update game state
+        function updateGameState(gameState) {
+            document.getElementById('potAmount').textContent = gameState.pot.toFixed(2);
+
+            // Update community cards
+            const communityCardsDiv = document.getElementById('communityCards');
+            communityCardsDiv.innerHTML = '';
+            gameState.communityCards.forEach(card => {
+                const cardDiv = document.createElement('div');
+                cardDiv.className = 'card';
+                cardDiv.textContent = card;
+                communityCardsDiv.appendChild(cardDiv);
+            });
+
+            // Update player positions
+            updatePlayerPositions(gameState.players);
+
+            // Update action buttons
+            updateActionButtons(gameState);
+        }
+
+        // Update player positions
+        function updatePlayerPositions(players) {
+            const positionsDiv = document.getElementById('playerPositions');
+            positionsDiv.innerHTML = '';
+
+            players.forEach((player, index) => {
+                const playerDiv = document.createElement('div');
+                playerDiv.className = 'player-item';
+                playerDiv.innerHTML = `
+                    <div>
+                        <strong>${player.name}</strong>
+                        <div>Balance: $${player.balance.toFixed(2)}</div>
+                        <div>Bet: $${player.currentBet.toFixed(2)}</div>
+                        ${player.folded ? '<div style="color: red;">FOLDED</div>' : ''}
+                        ${player.isDealer ? '<div style="color: yellow;">DEALER</div>' : ''}
+                        ${player.isSmallBlind ? '<div style="color: orange;">SMALL BLIND</div>' : ''}
+                        ${player.isBigBlind ? '<div style="color: orange;">BIG BLIND</div>' : ''}
+                        ${player.isCurrentPlayer ? '<div class="current-turn">CURRENT TURN</div>' : ''}
+                    </div>
+                    <div>
+                        ${player.cards.map(card => `<div class="card" style="width: 30px; height: 40px; font-size: 10px; margin: 2px;">${card}</div>`).join('')}
+                    </div>
+                `;
+                positionsDiv.appendChild(playerDiv);
+            });
+        }
+
+        // Update action buttons
+        function updateActionButtons(gameState) {
+            const currentPlayer = gameState.players.find(p => p.id === currentPlayerId);
+            if (!currentPlayer) return;
+
+            const isMyTurn = currentPlayer.isCurrentPlayer;
+            const amountToCall = gameState.currentBet - currentPlayer.currentBet;
+
+            document.getElementById('foldBtn').disabled = !isMyTurn;
+            document.getElementById('checkBtn').disabled = !isMyTurn || amountToCall > 0;
+            document.getElementById('callBtn').disabled = !isMyTurn || amountToCall <= 0;
+            document.getElementById('raiseBtn').disabled = !isMyTurn;
+
+            if (amountToCall > 0) {
+                document.getElementById('callBtn').textContent = `Call $${amountToCall.toFixed(2)}`;
+            } else {
+                document.getElementById('callBtn').textContent = 'Call';
+            }
+        }
+
+        // Show room info
+        function showRoomInfo(gameState) {
+            document.getElementById('createRoomForm').classList.add('hidden');
+            document.getElementById('joinRoomForm').classList.add('hidden');
+            document.getElementById('roomInfo').classList.remove('hidden');
+
+            document.getElementById('roomCodeDisplay').textContent = gameState.roomCode;
+            document.getElementById('roomBuyIn').textContent = gameState.buyIn;
+            document.getElementById('roomSmallBlind').textContent = gameState.smallBlind;
+            document.getElementById('roomBigBlind').textContent = gameState.bigBlind;
+            document.getElementById('playerCount').textContent = gameState.players.length;
+            document.getElementById('maxPlayerCount').textContent = gameState.maxPlayers;
+
+            if (isCreator && gameState.players.length >= 2) {
+                document.getElementById('startGameBtn').classList.remove('hidden');
+            }
+
+            updatePlayerList();
+        }
+
+        // Update player list
+        function updatePlayerList() {
+            if (!currentRoom) return;
+
+            fetch(`${API_BASE}/rooms/${currentRoom}`)
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        const playerListDiv = document.getElementById('playerList');
+                        playerListDiv.innerHTML = '';
+
+                        result.gameState.players.forEach(player => {
+                            const playerDiv = document.createElement('div');
+                            playerDiv.className = 'player-item';
+                            playerDiv.innerHTML = `
+                                <div>${player.name}</div>
+                                <div>$${player.balance.toFixed(2)}</div>
+                            `;
+                            playerListDiv.appendChild(playerDiv);
+                        });
+
+                        document.getElementById('playerCount').textContent = result.gameState.players.length;
+                    }
+                });
+        }
+
+        // Show game table
+        function showGameTable() {
+            document.getElementById('waitingMessage').classList.add('hidden');
+            document.getElementById('gameTable').classList.remove('hidden');
+        }
+
+        // Reset UI
+        function resetUI() {
+            document.getElementById('createRoomForm').classList.remove('hidden');
+            document.getElementById('joinRoomForm').classList.remove('hidden');
+            document.getElementById('roomInfo').classList.add('hidden');
+            document.getElementById('gameTable').classList.add('hidden');
+            document.getElementById('waitingMessage').classList.remove('hidden');
+
+            currentRoom = null;
+            currentPlayerId = null;
+            isCreator = false;
+        }
+
+        // Add log entry
+        function addLog(message) {
+            const logDiv = document.getElementById('gameLog');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initSocket();
+
+            // Show join room form by default
+            document.getElementById('createRoomForm').classList.add('hidden');
+            document.getElementById('joinRoomForm').classList.remove('hidden');
+        });
+    </script>
+</body>
+
+</html>
